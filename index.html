@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MTHMIHS eGrades Portal — Private Local Demo</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{--blue:#1976d2;--blue-dark:#0b57a4;--card-bg:#fff;}
+  body{font-family:Inter, Roboto, Arial, sans-serif; background:#f3f7fb; margin:0; padding:28px; display:flex; align-items:center; justify-content:center; min-height:100vh;}
+  .wrap{width:860px; max-width:96%; margin:0 auto;}
+  .card{background:var(--card-bg); border-radius:12px; box-shadow:0 12px 40px rgba(11,87,164,0.08); overflow:hidden; border:1px solid rgba(11,87,164,0.06);}
+  .header{padding:24px 18px; text-align:center; background:linear-gradient(90deg,var(--blue-dark),var(--blue)); color:#fff;}
+  .header h1{margin:0;font-size:20px;}
+  .sub{opacity:.95; margin-top:6px; font-size:13px;}
+  .body{padding:20px;}
+  .form{max-width:520px;margin:0 auto; text-align:left;}
+  label{display:block;font-size:13px;color:#333;margin-bottom:6px;}
+  input[type="text"], input[type="password"]{width:100%; padding:10px 12px; margin-bottom:12px; border-radius:8px; border:1px solid #e6eef8; font-size:14px; box-sizing:border-box;}
+  .btn{display:inline-block; width:100%; padding:11px 14px; border-radius:9px; background:var(--blue); color:#fff; text-align:center; text-decoration:none; cursor:pointer; border:0; font-size:15px;}
+  .hint{font-size:13px;color:#666;margin-top:10px;text-align:center;}
+  .msg{font-size:13px;color:#b21c1c;margin-top:10px;text-align:center; display:none;}
+  .private-view{display:none; text-align:center; padding:12px;}
+  .student-name{font-size:18px; color:#0d47a1; margin-bottom:8px;}
+  .view-btn{display:inline-block; padding:10px 14px; border-radius:8px; background:#0b57a4; color:#fff; text-decoration:none; font-weight:600; margin:6px;}
+  .logout{display:inline-block; padding:9px 12px; border-radius:8px; background:#777; color:#fff; border:none; cursor:pointer; margin-top:10px;}
+  .disclaimer{margin-top:18px;padding:12px;background:#fbfdff;border-top:1px solid rgba(11,87,164,0.03); color:#445; font-size:13px; border-radius:0 0 10px 10px;}
+  @media(max-width:520px){ .header h1{font-size:18px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" role="region" aria-label="MTHMIHS eGrades Portal private demo">
+    <div class="header">
+      <h1>MTHMIHS eGrades Portal</h1>
+      <div class="sub">Private local demo — each login reveals only that student's grades</div>
+    </div>
+
+    <div class="body">
+      <!-- LOGIN FORM -->
+      <div id="loginArea" class="form" aria-live="polite">
+        <label for="username">Username</label>
+        <input id="username" type="text" autocomplete="off" placeholder="e.g., JayronA.">
+
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="off" placeholder="Enter password">
+
+        <button id="loginBtn" class="btn" type="button">Sign in</button>
+        <div id="msg" class="msg" role="alert"></div>
+        <div class="hint">This is a local demo — do not publish. Use your demo credentials.</div>
+      </div>
+
+      <!-- PRIVATE STUDENT VIEW (only shows the logged-in user's link) -->
+      <div id="privateView" class="private-view" aria-live="polite">
+        <div class="student-name" id="studentName"></div>
+        <div id="actionArea">
+          <a id="viewGradesBtn" class="view-btn" href="#" target="_blank" rel="noopener">View My Grades</a>
+          <button id="autoOpenToggle" class="view-btn" style="background:#0b57a4;">Auto-open: ON</button>
+        </div>
+        <div>
+          <button id="logoutBtn" class="logout" type="button">Logout</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      <strong>Disclaimer:</strong> This eGrades Portal is a simulated system created for academic and demonstration purposes only at Maximo T. Hernandez Memorial Integrated High School. The login interface and student records presented here are fictitious. No personal data or real credentials are collected, stored, or transmitted. <em>DO NOT upload or publish this file online.</em>
+    </div>
+  </div>
+</div>
+
+<script>
+/* LOCAL-ONLY DEMO — do not publish online.
+   This script runs entirely in the browser and uses the mapping below.
+   On successful login it shows only the logged-in student's link.
+   It can auto-open the sheet in a new tab (default ON).
+*/
+
+(function(){
+  // username -> { pw, url, fullname }
+  const users = {
+    "JayronA.":   { pw: "passAguila_J",    url: "https://docs.google.com/spreadsheets/d/10qCDArbbqCFyqOpb0AanFEP8k5bhKXefmr6UWXLzvYs/preview", fullname: "Aguila, Jayron" },
+    "AlexisD.":   { pw: "passDelMundo_A",  url: "https://docs.google.com/spreadsheets/d/1SCD425R7xHJdOO--x5USwBxOy5hEy7qtCPmxShauWx8/preview", fullname: "Del Mundo, Alexis Jin" },
+    "LeandroG.":  { pw: "passGuerra_L",    url: "https://docs.google.com/spreadsheets/d/1iSokpGgEsLtPk05nSNltsTkM76PMStro42OPH82DwRo/preview", fullname: "Guerra, Leandro" },
+    "JoyE.":      { pw: "passEvangelista_J",url: "https://docs.google.com/spreadsheets/d/1h3lYnhK19ruEIfs9fv2JsNLARQ1ZerDLEQSEXtiNlbs/preview", fullname: "Evangelista, Joy" },
+    "AliahL.":    { pw: "passLaya_A",       url: "https://docs.google.com/spreadsheets/d/1DI20ze2JNbM3EhAOKWiqrOH2Q7elEwBXAjYiSLxObfE/preview", fullname: "Laya, Aliah" },
+    "VeronicaP.": { pw: "passPalma_V",      url: "https://docs.google.com/spreadsheets/d/119a95HEcWEjozkW_YgfT_YkrdLLI0goJ60BrvKszB6k/preview", fullname: "Palma, Veronica" },
+    "KianL.":     { pw: "passLubos_K",      url: "https://docs.google.com/spreadsheets/d/1Bz_UJL1rD-U7mvU8WrHs8JoFgjFWI1cjBFaN5Iiykqk/preview", fullname: "Lubos, Kian" },
+    "EmmanuelM.": { pw: "passMagnaye_E",    url: "https://docs.google.com/spreadsheets/d/1IfNbUo1_7ghroV3KJ-lYKzpL7Uk-0uHZ7n9JZQSEqXk/preview", fullname: "Magnaye, Emman" },
+    "AprilD.":    { pw: "passDeCastro_A",   url: "https://docs.google.com/spreadsheets/d/1t9-eFL_UdwCOJBWja2cQ2pIccohYxBbtHCyyzVacLRg/preview", fullname: "De Castro, April" },
+    "VheniceD.":  { pw: "passDeGuzman_V",   url: "https://docs.google.com/spreadsheets/d/1_C18yvC5Fzznn_HpMzrtYOXypJjUZaYi4ill2umAzTg/preview", fullname: "De Guzman, Vhenica" },
+    "StephanieG.":{ pw: "passGuerra_S",     url: "https://docs.google.com/spreadsheets/d/1qcugbMDpv-RYLDlVEg_FMzu0JKUCMMO_D-10xCFYXY8/preview", fullname: "Guerra, Stephanie" },
+    "MarielM.":   { pw: "passMarbella_M",   url: "https://docs.google.com/spreadsheets/d/1wms0K3XqBElCS_tF1oN-V2i-rIJP17UJOB5Ys1plkt8/preview", fullname: "Marbella, Mariel" }
+  };
+
+  const loginBtn = document.getElementById('loginBtn');
+  const userInput = document.getElementById('username');
+  const passInput = document.getElementById('password');
+  const msg = document.getElementById('msg');
+  const loginArea = document.getElementById('loginArea');
+  const privateView = document.getElementById('privateView');
+  const studentNameEl = document.getElementById('studentName');
+  const viewGradesBtn = document.getElementById('viewGradesBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const autoOpenToggle = document.getElementById('autoOpenToggle');
+
+  let currentUser = null;
+  let autoOpen = true;
+
+  function showMsg(text, isError=true){
+    msg.style.display = 'block';
+    msg.style.color = isError ? '#b21c1c' : '#0b7a33';
+    msg.textContent = text;
+  }
+  function clearMsg(){ msg.style.display = 'none'; msg.textContent = ''; }
+
+  loginBtn.addEventListener('click', function(){
+    clearMsg();
+    const u = userInput.value.trim();
+    const p = passInput.value;
+    if(!u || !p){
+      showMsg('Please enter username and password.');
+      return;
+    }
+    const rec = users[u];
+    if(!rec || rec.pw !== p){
+      showMsg('Invalid username or password.');
+      return;
+    }
+    // success: show private view with only this student's info
+    currentUser = u;
+    studentNameEl.textContent = rec.fullname;
+    viewGradesBtn.href = rec.url;
+    loginArea.style.display = 'none';
+    privateView.style.display = 'block';
+    clearMsg();
+
+    // auto-open after short delay if enabled
+    if(autoOpen){
+      setTimeout(function(){
+        window.open(rec.url, '_blank', 'noopener');
+      }, 800);
+    }
+  });
+
+  logoutBtn.addEventListener('click', function(){
+    currentUser = null;
+    privateView.style.display = 'none';
+    loginArea.style.display = 'block';
+    userInput.value = '';
+    passInput.value = '';
+    clearMsg();
+  });
+
+  autoOpenToggle.addEventListener('click', function(){
+    autoOpen = !autoOpen;
+    autoOpenToggle.textContent = 'Auto-open: ' + (autoOpen ? 'ON' : 'OFF');
+    autoOpenToggle.style.background = autoOpen ? '#0b57a4' : '#555';
+  });
+
+  // allow Enter key to submit
+  [userInput, passInput].forEach(function(el){
+    el.addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){ loginBtn.click(); }
+    });
+  });
+
+})();
+</script>
+</body>
+</html>
